@@ -1,26 +1,26 @@
-name: Check for modules that should use `prelude`
+name: Check for stage0 updates on the merge queue
 
-on: [pull_request]
+# We only want to run this on merge_group checks, but github uses the same
+# list of requires checks for PR → queu and queue → master, so
+# this needs to run (without doing anything) for pull_request as well.
+on:
+  merge_group:
+  pull_request:
 
 jobs:
-  check-prelude:
+  check-stage0-on-queue:
     runs-on: ubuntu-latest
+    if: github.event_name == 'merge_group'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          # the default is to use a virtual merge commit between the PR and master: just use the PR
-          ref: ${{ github.event.pull_request.head.sha }}
-          sparse-checkout: src/Lean
-      - name: Check Prelude
-        run: |
-          failed_files=""
-          while IFS= read -r -d '' file; do
-            if ! grep -q "^prelude$" "$file"; then
-              failed_files="$failed_files$file\n"
-            fi
-          done < <(find src/Lean -name '*.lean' -print0)
-          if [ -n "$failed_files" ]; then
-            echo -e "The following files should use 'prelude':\n$failed_files"
-            exit 1
-          fi
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+    - run: |
+        if git diff HEAD^..HEAD --name-only -- stage0 |
+           grep -v -x -F stage0/src/stdlib_flags.h |
+           grep -v -x -F stage0/src/lean.mk.in |
+           grep -q .
+        then
+          echo "Found stage0 updates, please do not merge using the merge queue" | tee "$GITHUB_STEP_SUMMARY"
+          exit 1
+        fi
