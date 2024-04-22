@@ -10,17 +10,20 @@ on:
 jobs:
   check-stage0-on-queue:
     runs-on: ubuntu-latest
-    if: github.event_name == 'merge_group'
+    # if: github.event_name == 'merge_group'
     steps:
     - uses: actions/checkout@v4
       with:
         ref: ${{ github.event.pull_request.head.sha }}
+        filter: blob:none
+        fetch-depth: 2
     - run: |
         if git diff HEAD^..HEAD --name-only -- stage0 |
            grep -v -x -F stage0/src/stdlib_flags.h |
            grep -v -x -F stage0/src/lean.mk.in |
            grep -q .
         then
-          echo "Found stage0 updates, please do not merge using the merge queue" | tee "$GITHUB_STEP_SUMMARY"
+          echo "Found changes to stage0/, please do not merge using the merge queue." | tee "$GITHUB_STEP_SUMMARY"
           exit 1
         fi
+      shell: bash
