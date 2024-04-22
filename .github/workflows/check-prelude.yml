@@ -1,4 +1,4 @@
-name: Check for copyright header
+name: Check for stage0 updates on the merge queue
 
 # We only want to run this on merge_group checks, but github uses the same
 # list of requires checks for PR → queu and queue → master, so
